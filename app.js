@@ -48,7 +48,6 @@ let session = null;
 let player = null;
 let books = [];
 let i = 0;
-const liked = [];
 
 function show(book) {
   // Hide until the new cover loads, so the previous book's cover never sits on this one.
@@ -65,7 +64,6 @@ function show(book) {
 }
 
 function decide(yes) {
-  if (yes) liked.push(books[i]);
   const title = books[i].title;
   insert('swipes', { session_code: session, round: ROUND, player, book_id: books[i].id, liked: yes })
     .catch((err) => { $('status').textContent = `Couldn't save your swipe on "${title}": ${err.message}`; });
@@ -75,8 +73,58 @@ function decide(yes) {
   } else {
     $('card').hidden = true;
     $('choices').hidden = true;
-    $('status').textContent = `Done! You liked ${liked.length} of ${books.length} books.`;
+    waitForMatches();
   }
+}
+
+const POLL_MS = 3000;
+
+// Reads this round's swipes from Supabase until both players have swiped every book, then
+// lists the books both liked. The database is the source of truth, so it works after a reload too.
+async function waitForMatches() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/swipes?session_code=eq.${session}&round=eq.${ROUND}&select=player,book_id,liked`,
+      { headers: { apikey: SUPABASE_KEY } },
+    );
+    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    const pool = new Set(books.map((b) => b.id));
+    const byPlayer = {}; // player -> Map(book_id -> liked)
+    for (const s of await res.json()) {
+      if (pool.has(s.book_id)) (byPlayer[s.player] ??= new Map()).set(s.book_id, s.liked);
+    }
+    const mine = byPlayer[player] ?? new Map();
+    // shortcut: assumes two players; a third person joining is ignored.
+    const partner = Object.keys(byPlayer).find((p) => p !== player);
+    const theirs = byPlayer[partner] ?? new Map();
+
+    if (mine.size < books.length) {
+      $('status').textContent = 'Saving your last swipes…';
+    } else if (!partner) {
+      $('status').textContent = `You're done! Waiting for your partner to join session ${session}…`;
+    } else if (theirs.size < books.length) {
+      $('status').textContent = `You're done! Waiting for ${partner} to finish (${theirs.size} of ${books.length})…`;
+    } else {
+      const matches = books.filter((b) => mine.get(b.id) && theirs.get(b.id));
+      showMatches(matches, partner);
+      return;
+    }
+  } catch (err) {
+    $('status').textContent = `Connection problem, retrying… (${err.message})`;
+  }
+  setTimeout(waitForMatches, POLL_MS);
+}
+
+function showMatches(matches, partner) {
+  $('status').textContent = matches.length
+    ? `You and ${partner} both liked ${matches.length} of ${books.length} books:`
+    : `You and ${partner} didn't like any of the same books.`;
+  $('matches').replaceChildren(...matches.map((b) => {
+    const li = document.createElement('li');
+    li.textContent = `${b.title} — ${b.author}`;
+    return li;
+  }));
+  $('matches').hidden = false;
 }
 
 const SWIPE_THRESHOLD = 40; // px of sideways drag that counts as a decision
@@ -157,6 +205,9 @@ async function main() {
     const res = await fetch('books.json');
     if (!res.ok) throw new Error(`books.json returned ${res.status}`);
     books = await res.json();
+    // Testing aid: ?n=5 swipes only the first 5 books. Both phones must use the same n.
+    const n = Number(new URLSearchParams(location.search).get('n'));
+    if (n > 0) books = books.slice(0, n);
     if (books.length === 0) {
       $('status').textContent = 'No books in books.json.';
       return;
