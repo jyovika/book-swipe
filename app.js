@@ -62,7 +62,18 @@ function show(book) {
   $('author').textContent = book.author;
   $('synopsis').textContent = book.synopsis;
   $('synopsis').scrollTop = 0;
-  $('status').textContent = `Round ${round} · ${session} · ${player} · Book ${i + 1} of ${books.length}`;
+  $('status').textContent = ''; // the chips say where you are; the status line is for messages
+  $('meta').replaceChildren(
+    chip(`Round ${round}`), chip(`Code ${session}`), chip(player), chip(`Book ${i + 1} of ${books.length}`),
+  );
+  $('meta').hidden = false;
+}
+
+function chip(text) {
+  const span = document.createElement('span');
+  span.className = 'chip';
+  span.textContent = text;
+  return span;
 }
 
 function decide(yes) {
@@ -75,6 +86,7 @@ function decide(yes) {
   } else {
     $('card').hidden = true;
     $('choices').hidden = true;
+    $('meta').hidden = true;
     waitForMatches();
   }
 }

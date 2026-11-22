@@ -66,6 +66,18 @@ h1 { margin: 0 0 4px; font-size: 1.6rem; font-weight: 600; }
   margin: 0 0 16px;
   color: var(--on-ink-muted);
   font-size: 0.9rem;
+}
+#status:empty { display: none; }
+/* Where you are, as small rounded chips while swiping. */
+#meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+#meta[hidden] { display: none; }
+.chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--ink-2);
+  color: var(--on-ink-muted);
+  box-shadow: inset 0 0 0 1px var(--ring);
+  font-size: 0.8rem;
   font-variant-numeric: tabular-nums; /* "Book 9 of 60" -> "Book 10 of 60" doesn't shift */
 }
 
