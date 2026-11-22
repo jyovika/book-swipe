@@ -25,12 +25,20 @@ main {
   max-height: 40vh;
   overflow-y: auto;
   line-height: 1.5;
+  white-space: pre-line;
+}
+#choices {
+  display: flex;
+  gap: 12px;
 }
 button {
-  width: 100%;
+  flex: 1;
   margin-top: 12px;
   padding: 14px;
   font-size: 1rem;
   border: 0;
   border-radius: 8px;
+  cursor: pointer;
 }
+#no { background: #3a2222; color: #f88; }
+#yes { background: #1f3a26; color: #8f8; }
