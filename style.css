@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111;
+  color: #eee;
+}
+main {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 16px;
+}
+#card {
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 16px;
+}
+#cover {
+  display: block;
+  margin: 0 auto 12px;
+  max-height: 260px;
+  border-radius: 6px;
+}
+#author { color: #aaa; margin-top: -8px; }
+#synopsis {
+  max-height: 40vh;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  font-size: 1rem;
+  border: 0;
+  border-radius: 8px;
+}
