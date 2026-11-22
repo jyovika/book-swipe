@@ -11,6 +11,19 @@
   --display-font: 'Playfair Display', Georgia, serif;
   --body-font: system-ui, sans-serif;
 }
+/* shortcut: second look for comparing (?look=cozy); delete whichever look loses. */
+:root[data-look="cozy"] {
+  --bg: #1b1511;           /* dark walnut */
+  --surface: #2a211b;
+  --input-bg: #34291f;
+  --text: #f3e9d8;         /* cream paper */
+  --muted: #b3a48f;
+  --accent: #d4924a;       /* lamplight amber */
+  --on-accent: #1b1511;
+  --ring: rgba(243, 233, 216, 0.18);
+  --display-font: 'Lora', Georgia, serif;
+  --body-font: 'Lora', Georgia, serif;
+}
 
 html, body {
   height: 100%;
