@@ -1,149 +1,138 @@
-/* The look lives here: change these to restyle the whole app. Current look: dark noir thriller. */
+/* Hallmark · redesign: restyle · direction: custom, from the user's references (ink ground, cream paper cards, rounded shapes, one warm accent) · shape: app screen · signature: the book card as a sheet of cream paper */
+/* critique: the swipe card must read as paper you could pick up; everything else stays quiet so the cover leads. */
+
+/* The look lives here: change these to restyle the whole app. */
 :root {
-  --bg: #0a0a0b;
-  --surface: #151517;
-  --input-bg: #1e1e21;
-  --text: #ede9e3;
-  --muted: #8d877f;
-  --accent: #c1121f; /* blood red */
-  --on-accent: #fff;
-  --ring: rgba(255, 255, 255, 0.16);
-  --display-font: 'Playfair Display', Georgia, serif;
-  --body-font: system-ui, sans-serif;
-}
-/* shortcut: second look for comparing (?look=cozy); delete whichever look loses. */
-:root[data-look="cozy"] {
-  --bg: #1b1511;           /* dark walnut */
-  --surface: #2a211b;
-  --input-bg: #34291f;
-  --text: #f3e9d8;         /* cream paper */
-  --muted: #b3a48f;
-  --accent: #d4924a;       /* lamplight amber */
-  --on-accent: #1b1511;
-  --ring: rgba(243, 233, 216, 0.18);
-  --display-font: 'Lora', Georgia, serif;
-  --body-font: 'Lora', Georgia, serif;
+  --ink: #15213a;           /* page ground: deep ink navy */
+  --ink-2: #1e2c4a;         /* raised ink: inputs on the ground */
+  --paper: #f5eddd;         /* cards: cream paper */
+  --paper-edge: #d9cbb0;    /* the darker sheet under each card */
+  --on-ink: #f5eddd;
+  --on-ink-muted: #a6b0c4;
+  --on-paper: #1b2640;
+  --on-paper-muted: #6e6655;
+  --accent: #f0a872;        /* peach: the one warm signal, for "yes" and main actions */
+  --on-accent: #15213a;
+  --ring: rgba(245, 237, 221, 0.22);
+  --focus: #f0a872;
+  --font: 'Lexend', system-ui, sans-serif;
+  --radius-card: 24px;
+  --radius-field: 14px;
 }
 
 html, body {
   height: 100%;
   margin: 0;
-  overflow: hidden; /* the page never scrolls; only the synopsis box does */
+  overflow: clip; /* the page never scrolls; only the synopsis box does */
 }
 body {
-  font-family: var(--body-font);
-  background: var(--bg);
-  color: var(--text);
+  font-family: var(--font);
+  background: var(--ink);
+  color: var(--on-ink);
   -webkit-font-smoothing: antialiased; /* crisper, lighter text on Apple screens */
 }
-h1, h2 { text-wrap: balance; } /* even line lengths for long titles */
+h1, h2 { text-wrap: balance; overflow-wrap: break-word; min-width: 0; } /* even line lengths for long titles */
 main {
   box-sizing: border-box;
   height: 100dvh; /* dvh: the visible height on phones, excluding the browser bars */
   max-width: 420px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 20px 16px 16px;
   display: flex;
   flex-direction: column;
 }
-h1 {
-  margin: 0 0 2px;
-  font-family: var(--display-font);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
+h1 { margin: 0 0 4px; font-size: 1.6rem; font-weight: 600; }
 #status {
-  margin: 0 0 12px;
-  color: var(--muted);
+  margin: 0 0 16px;
+  color: var(--on-ink-muted);
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums; /* "Book 9 of 60" -> "Book 10 of 60" doesn't shift */
 }
+
+/* The signature: the book card as a sheet of cream paper, with a darker sheet peeking underneath. */
 #card {
   flex: 1;
   min-height: 0; /* lets the card shrink so the synopsis box scrolls instead of the page */
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 16px;
-  /* Layered soft shadows lift the card off the page, instead of a flat box. */
+  background: var(--paper);
+  color: var(--on-paper);
+  border-radius: var(--radius-card);
+  padding: 20px;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 2px 4px rgba(0, 0, 0, 0.3),
-    0 12px 32px rgba(0, 0, 0, 0.4);
+    0 6px 0 var(--paper-edge),
+    0 18px 40px rgba(0, 0, 0, 0.35);
   touch-action: none; /* every drag on the card is a swipe... */
   user-select: none;
 }
 #card[hidden] { display: none; }
 #cover {
   display: block;
-  margin: 0 auto 12px;
+  margin: 0 auto 16px;
   max-height: 30vh;
-  border-radius: 6px;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(21, 33, 58, 0.25);
 }
-/* A faint edge so dark covers don't melt into the dark card. */
-#cover, #winner-cover {
-  outline: 1px solid rgba(255, 255, 255, 0.1);
-  outline-offset: -1px;
-}
-#title, #winner-title {
-  margin: 0 0 4px;
-  font-family: var(--display-font);
-  font-size: 1.4rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-#author, #winner-author { color: var(--muted); margin: 0 0 12px; }
+/* A faint edge so pale covers don't melt into the cream card. */
+#cover { outline: 1px solid rgba(0, 0, 0, 0.1); outline-offset: -1px; }
+#winner-cover { outline: 1px solid rgba(255, 255, 255, 0.1); outline-offset: -1px; }
+#title, #winner-title { margin: 0 0 2px; font-size: 1.3rem; font-weight: 600; line-height: 1.25; }
+#author { color: var(--on-paper-muted); margin: 0 0 12px; }
 #synopsis {
   flex: 1;
   min-height: 0;
   margin: 0;
   overflow-y: auto;
-  line-height: 1.55;
+  line-height: 1.6;
   white-space: pre-line;
   text-wrap: pretty; /* avoids a single word alone on the last line */
   touch-action: pan-y; /* ...except up/down inside the synopsis, which scrolls it */
 }
+
 #choices {
   display: flex;
   gap: 12px;
+  margin-top: 20px;
 }
 #choices[hidden] { display: none; }
 button {
   flex: 1;
   margin-top: 12px;
-  padding: 14px;
+  min-height: 52px;
+  padding: 14px 20px;
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   border: 0;
-  border-radius: 8px;
+  border-radius: 999px; /* pills, like the references */
   cursor: pointer;
   transition: scale 0.15s ease-out;
 }
+#choices button { margin-top: 0; }
 button:active { scale: 0.96; } /* a small press-in, so taps feel physical */
-/* Positive actions are solid red; "Nope" is a quiet outline. */
+button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; transition: none; }
+/* Peach for yes and the main actions; "Nope" is a quiet outline. */
 #yes, #start, #join-btn, #round2, .pick { background: var(--accent); color: var(--on-accent); }
-#no { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--ring); }
+#no { background: transparent; color: var(--on-ink); box-shadow: inset 0 0 0 2px var(--ring); }
+
 #join[hidden] { display: none; }
-#join label { display: block; margin-top: 12px; color: var(--muted); font-size: 0.9rem; }
+#join label { display: block; margin-top: 16px; color: var(--on-ink-muted); font-size: 0.9rem; }
 #join input {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  margin-top: 6px;
-  padding: 12px;
+  margin-top: 8px;
+  padding: 14px 16px;
   font: inherit;
   font-size: 1rem; /* 16px+ stops iOS zooming in on focus */
-  color: var(--text);
-  background: var(--input-bg);
+  color: var(--on-ink);
+  background: var(--ink-2);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-field);
   box-shadow: inset 0 0 0 1px var(--ring);
 }
-#join input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
 #join button { width: 100%; }
-#join .or { color: var(--muted); margin: 28px 0 0; text-align: center; font-size: 0.9rem; }
+#join .or { color: var(--on-ink-muted); margin: 32px 0 0; text-align: center; font-size: 0.9rem; }
+
 #matches { overflow-y: auto; line-height: 1.8; padding-left: 20px; }
 #round2 { flex: none; }
 #round2[hidden] { display: none; }
@@ -151,8 +140,14 @@ button:active { scale: 0.96; } /* a small press-in, so taps feel physical */
   flex: none;
   margin: 4px 0 8px;
   min-height: 40px; /* big enough to tap reliably */
-  padding: 6px 12px;
+  padding: 6px 16px;
   font-size: 0.9rem;
 }
 #winner { text-align: center; }
-#winner-cover { max-height: 45vh; border-radius: 6px; margin-bottom: 12px; }
+#winner-cover { max-height: 45vh; border-radius: 10px; margin-bottom: 16px; }
+#winner-author { color: var(--on-ink-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  button { transition: none; }
+  button:active { scale: none; }
+}
