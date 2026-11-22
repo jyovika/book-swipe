@@ -7,7 +7,9 @@ body {
   font-family: system-ui, sans-serif;
   background: #111;
   color: #eee;
+  -webkit-font-smoothing: antialiased; /* crisper, lighter text on Apple screens */
 }
+h1, h2 { text-wrap: balance; } /* even line lengths for long titles */
 main {
   box-sizing: border-box;
   height: 100dvh; /* dvh: the visible height on phones, excluding the browser bars */
@@ -18,7 +20,10 @@ main {
   flex-direction: column;
 }
 h1 { margin: 0 0 4px; font-size: 1.5rem; }
-#status { margin: 0 0 8px; }
+#status {
+  margin: 0 0 8px;
+  font-variant-numeric: tabular-nums; /* "Book 9 of 60" -> "Book 10 of 60" doesn't shift */
+}
 #card {
   flex: 1;
   min-height: 0; /* lets the card shrink so the synopsis box scrolls instead of the page */
@@ -27,6 +32,11 @@ h1 { margin: 0 0 4px; font-size: 1.5rem; }
   background: #1e1e1e;
   border-radius: 12px;
   padding: 16px;
+  /* Layered soft shadows lift the card off the page, instead of a flat box. */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 12px 32px rgba(0, 0, 0, 0.4);
   touch-action: none; /* every drag on the card is a swipe... */
   user-select: none;
 }
@@ -37,6 +47,11 @@ h1 { margin: 0 0 4px; font-size: 1.5rem; }
   max-height: 30vh;
   border-radius: 6px;
 }
+/* A faint edge so dark covers don't melt into the dark card. */
+#cover, #winner-cover {
+  outline: 1px solid rgba(255, 255, 255, 0.1);
+  outline-offset: -1px;
+}
 #title { margin: 0 0 4px; }
 #author { color: #aaa; margin: 0 0 8px; }
 #synopsis {
@@ -46,6 +61,7 @@ h1 { margin: 0 0 4px; font-size: 1.5rem; }
   overflow-y: auto;
   line-height: 1.5;
   white-space: pre-line;
+  text-wrap: pretty; /* avoids a single word alone on the last line */
   touch-action: pan-y; /* ...except up/down inside the synopsis, which scrolls it */
 }
 #choices {
@@ -61,7 +77,9 @@ button {
   border: 0;
   border-radius: 8px;
   cursor: pointer;
+  transition: scale 0.15s ease-out;
 }
+button:active { scale: 0.96; } /* a small press-in, so taps feel physical */
 #join[hidden] { display: none; }
 #join label { display: block; margin-top: 12px; }
 #join input {
@@ -82,6 +100,7 @@ button {
 .pick {
   flex: none;
   margin: 4px 0 8px;
+  min-height: 40px; /* big enough to tap reliably */
   padding: 6px 12px;
   font-size: 0.9rem;
   background: #1f3a26;
