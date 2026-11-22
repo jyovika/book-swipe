@@ -10,6 +10,13 @@
   <main>
     <h1>Book Swipe</h1>
     <p id="status">Loading books…</p>
+    <form id="join" hidden>
+      <label>Your name <input id="name" maxlength="30" autocomplete="given-name" required></label>
+      <button type="button" id="start">Start new session</button>
+      <p class="or">or join your partner's session</p>
+      <label>Session code <input id="code" maxlength="8" autocapitalize="characters" autocomplete="off"></label>
+      <button type="button" id="join-btn">Join</button>
+    </form>
     <article id="card" hidden>
       <img id="cover" alt="" draggable="false">
       <h2 id="title"></h2>

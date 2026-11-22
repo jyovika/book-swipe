@@ -1,27 +1,51 @@
 // The publishable key is meant to be public; Row Level Security limits it to reading and adding rows.
 const SUPABASE_URL = 'https://mwwxdtgocjsueejrvayd.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_QwfTOefMWM9lDf1uD4Ozig_jn9iRSxa';
-// shortcut: fixed session and player until the join screen exists (next step).
-const SESSION = 'TEST';
-const PLAYER = 'test';
 const ROUND = 1;
+// No 0/O or 1/I, so a code read aloud or off a screen can't be mistyped.
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const $ = (id) => document.getElementById(id);
 
-// Adds a row; an identical row that already exists is skipped, so reloading and re-swiping is safe.
-async function insert(table, row) {
+// Adds a row. By default an identical existing row is skipped, so re-swiping a book is harmless;
+// pass ignoreDuplicates=false to get an error instead (used to avoid reusing a session code).
+async function insert(table, row, ignoreDuplicates = true) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: 'POST',
     headers: {
       apikey: SUPABASE_KEY,
       'Content-Type': 'application/json',
-      Prefer: 'resolution=ignore-duplicates,return=minimal',
+      Prefer: `${ignoreDuplicates ? 'resolution=ignore-duplicates,' : ''}return=minimal`,
     },
     body: JSON.stringify(row),
   });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  return res;
 }
 
+async function sessionExists(code) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/sessions?code=eq.${encodeURIComponent(code)}&select=code`, {
+    headers: { apikey: SUPABASE_KEY },
+  });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  return (await res.json()).length > 0;
+}
+
+async function createSession() {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+    try {
+      await insert('sessions', { code }, false);
+      return code;
+    } catch (err) {
+      if (!err.message.startsWith('409')) throw err; // 409: code already taken, try another
+    }
+  }
+  throw new Error('could not find a free session code, try again');
+}
+
+let session = null;
+let player = null;
 let books = [];
 let i = 0;
 const liked = [];
@@ -37,13 +61,13 @@ function show(book) {
   $('author').textContent = book.author;
   $('synopsis').textContent = book.synopsis;
   $('synopsis').scrollTop = 0;
-  $('status').textContent = `Book ${i + 1} of ${books.length}`;
+  $('status').textContent = `Session ${session} · ${player} · Book ${i + 1} of ${books.length}`;
 }
 
 function decide(yes) {
   if (yes) liked.push(books[i]);
   const title = books[i].title;
-  insert('swipes', { session_code: SESSION, round: ROUND, player: PLAYER, book_id: books[i].id, liked: yes })
+  insert('swipes', { session_code: session, round: ROUND, player, book_id: books[i].id, liked: yes })
     .catch((err) => { $('status').textContent = `Couldn't save your swipe on "${title}": ${err.message}`; });
   i += 1;
   if (i < books.length) {
@@ -86,6 +110,48 @@ function enableSwipe(card) {
   card.addEventListener('pointercancel', end);
 }
 
+function startSwiping(code, name) {
+  session = code;
+  player = name;
+  $('join').hidden = true;
+  $('card').hidden = false;
+  $('choices').hidden = false;
+  show(books[0]);
+}
+
+function setupJoin() {
+  $('join').hidden = false;
+  $('status').textContent = 'Enter your name, then start a session or join one.';
+  const name = () => {
+    const n = $('name').value.trim();
+    if (!n) $('status').textContent = 'Enter your name first.';
+    return n;
+  };
+  const run = async (button, action) => {
+    button.disabled = true; // stops a double tap creating two sessions
+    try {
+      await action();
+    } catch (err) {
+      $('status').textContent = `Couldn't reach the server: ${err.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  };
+  $('start').onclick = () => run($('start'), async () => {
+    const n = name();
+    if (!n) return;
+    startSwiping(await createSession(), n);
+  });
+  $('join-btn').onclick = () => run($('join-btn'), async () => {
+    const n = name();
+    const code = $('code').value.trim().toUpperCase();
+    if (!n) return;
+    if (!code) { $('status').textContent = 'Enter the session code from your partner.'; return; }
+    if (!(await sessionExists(code))) { $('status').textContent = `No session with code ${code}. Check it and try again.`; return; }
+    startSwiping(code, n);
+  });
+}
+
 async function main() {
   try {
     const res = await fetch('books.json');
@@ -95,17 +161,11 @@ async function main() {
       $('status').textContent = 'No books in books.json.';
       return;
     }
-    // Swipes reference a session, so it must exist before the first swipe is saved.
-    await insert('sessions', { code: SESSION }).catch((err) => {
-      throw new Error(`can't reach Supabase: ${err.message}`);
-    });
-    $('card').hidden = false;
-    $('choices').hidden = false;
     $('cover').onload = () => { $('cover').style.visibility = 'visible'; };
-    show(books[0]);
     $('yes').onclick = () => decide(true);
     $('no').onclick = () => decide(false);
     enableSwipe($('card'));
+    setupJoin();
   } catch (err) {
     $('status').textContent = `Couldn't start: ${err.message}`;
   }
