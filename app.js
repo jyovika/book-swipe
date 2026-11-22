@@ -1,4 +1,27 @@
+// The publishable key is meant to be public; Row Level Security limits it to reading and adding rows.
+const SUPABASE_URL = 'https://mwwxdtgocjsueejrvayd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_QwfTOefMWM9lDf1uD4Ozig_jn9iRSxa';
+// shortcut: fixed session and player until the join screen exists (next step).
+const SESSION = 'TEST';
+const PLAYER = 'test';
+const ROUND = 1;
+
 const $ = (id) => document.getElementById(id);
+
+// Adds a row; an identical row that already exists is skipped, so reloading and re-swiping is safe.
+async function insert(table, row) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=ignore-duplicates,return=minimal',
+    },
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+}
+
 let books = [];
 let i = 0;
 const liked = [];
@@ -7,7 +30,7 @@ function show(book) {
   // Hide until the new cover loads, so the previous book's cover never sits on this one.
   $('cover').style.visibility = 'hidden';
   $('cover').src = book.cover;
-  // Covers are slow (Open Library redirects to archive.org), so fetch the next one now.
+  // Fetch the next cover now so it's ready before the next swipe.
   if (books[i + 1]) new Image().src = books[i + 1].cover;
   $('cover').alt = `Cover of ${book.title}`;
   $('title').textContent = book.title;
@@ -19,6 +42,9 @@ function show(book) {
 
 function decide(yes) {
   if (yes) liked.push(books[i]);
+  const title = books[i].title;
+  insert('swipes', { session_code: SESSION, round: ROUND, player: PLAYER, book_id: books[i].id, liked: yes })
+    .catch((err) => { $('status').textContent = `Couldn't save your swipe on "${title}": ${err.message}`; });
   i += 1;
   if (i < books.length) {
     show(books[i]);
@@ -69,6 +95,10 @@ async function main() {
       $('status').textContent = 'No books in books.json.';
       return;
     }
+    // Swipes reference a session, so it must exist before the first swipe is saved.
+    await insert('sessions', { code: SESSION }).catch((err) => {
+      throw new Error(`can't reach Supabase: ${err.message}`);
+    });
     $('card').hidden = false;
     $('choices').hidden = false;
     $('cover').onload = () => { $('cover').style.visibility = 'visible'; };
@@ -77,7 +107,7 @@ async function main() {
     $('no').onclick = () => decide(false);
     enableSwipe($('card'));
   } catch (err) {
-    $('status').textContent = `Couldn't load books: ${err.message}`;
+    $('status').textContent = `Couldn't start: ${err.message}`;
   }
 }
 
