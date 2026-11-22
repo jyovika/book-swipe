@@ -3,16 +3,16 @@
 
 /* The look lives here: change these to restyle the whole app. */
 :root {
-  --ink: #15213a;           /* page ground: deep ink navy */
-  --ink-2: #1e2c4a;         /* raised ink: inputs on the ground */
+  --ink: #304c57;           /* page ground: slate teal, sampled from the user's reference */
+  --ink-2: #26404a;         /* inset teal: inputs on the ground */
   --paper: #f5eddd;         /* cards: cream paper */
   --paper-edge: #d9cbb0;    /* the darker sheet under each card */
   --on-ink: #f5eddd;
-  --on-ink-muted: #a6b0c4;
-  --on-paper: #1b2640;
+  --on-ink-muted: #b4c7cc;
+  --on-paper: #12262d;
   --on-paper-muted: #6e6655;
   --accent: #f0a872;        /* peach: the one warm signal, for "yes" and main actions */
-  --on-accent: #15213a;
+  --on-accent: #12262d;
   --ring: rgba(245, 237, 221, 0.22);
   --focus: #f0a872;
   --font: 'Lexend', system-ui, sans-serif;
@@ -71,7 +71,7 @@ h1 { margin: 0 0 4px; font-size: 1.6rem; font-weight: 600; }
   margin: 0 auto 16px;
   max-height: 30vh;
   border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(21, 33, 58, 0.25);
+  box-shadow: 0 8px 20px rgba(18, 38, 45, 0.25);
 }
 /* A faint edge so pale covers don't melt into the cream card. */
 #cover { outline: 1px solid rgba(0, 0, 0, 0.1); outline-offset: -1px; }
