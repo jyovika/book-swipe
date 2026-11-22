@@ -56,6 +56,21 @@ def english_title(work_title, edition_title):
     return work_title if words(work_title) & words(edition_title) else edition_title.strip()
 
 
+def looks_foreign(title):
+    """Accented letters and no common English word: a title we couldn't translate (El túnel)."""
+    return not title.isascii() and not words(title) & ENGLISH_WORDS
+
+
+def clean_synopsis(text):
+    """Strip Open Library editors' extras: "See also"/"Contains" link lists and Markdown links."""
+    text = text.replace("\r\n", "\n")
+    text = re.split(r"\n\s*-{3,}\s*\n", text)[0]  # everything after a --- separator is extras
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)  # [label](url) -> label
+    text = re.sub(r"^\s*\[\d+\]:.*$", "", text, flags=re.M)  # [1]: url footnote lines
+    text = re.sub(r"\(\[source\]\[\d+\]\)|\[\d+\]", "", text)  # footnote markers
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
 def main():
     params = urllib.parse.urlencode({
         "q": QUERY,
@@ -69,11 +84,12 @@ def main():
     for doc in docs:
         if len(books) >= MAX_BOOKS:
             break
-        author = ", ".join(doc.get("author_name", []))
+        # First author only: later entries are often translators or duplicate records.
+        author = (doc.get("author_name") or [""])[0]
         edition = ((doc.get("editions") or {}).get("docs") or [{}])[0].get("title")
         title = english_title(doc["title"], edition)
         # A card is useless without a cover; skip repeat editions and over-represented authors.
-        if (not doc.get("cover_i") or title.lower() in seen_titles
+        if (not doc.get("cover_i") or title.lower() in seen_titles or looks_foreign(title)
                 or per_author.get(author, 0) >= MAX_PER_AUTHOR):
             continue
         try:
@@ -82,8 +98,8 @@ def main():
             print(f"skip {title}: {err}")
             continue
         desc = work.get("description")
-        desc = desc.get("value") if isinstance(desc, dict) else desc
-        if not desc:
+        desc = clean_synopsis((desc.get("value") if isinstance(desc, dict) else desc) or "")
+        if len(desc) < 80:  # too short to help you decide
             continue
         seen_titles.add(title.lower())
         per_author[author] = per_author.get(author, 0) + 1
@@ -92,7 +108,7 @@ def main():
             "title": title,
             "author": author,
             "cover": f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-L.jpg",
-            "synopsis": desc.strip(),
+            "synopsis": desc,
         })
         print(f"{len(books):3} {title} ({author})")
 
