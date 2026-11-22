@@ -29,12 +29,14 @@ function decide(yes) {
   }
 }
 
-const SWIPE_THRESHOLD = 100; // px of sideways drag that counts as a decision
+const SWIPE_THRESHOLD = 40; // px of sideways drag that counts as a decision
 
 function enableSwipe(card) {
   let startX = null;
+  let startY = 0;
   card.addEventListener('pointerdown', (e) => {
     startX = e.clientX;
+    startY = e.clientY;
     card.style.transition = 'none';
     card.setPointerCapture(e.pointerId);
   });
@@ -46,11 +48,13 @@ function enableSwipe(card) {
   const end = (e) => {
     if (startX === null) return;
     const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
     startX = null;
     card.style.transition = 'transform 0.2s';
     card.style.transform = '';
-    // pointercancel means the browser took over to scroll, so it never counts as a swipe.
-    if (e.type === 'pointerup' && Math.abs(dx) > SWIPE_THRESHOLD) decide(dx > 0);
+    // pointercancel means the synopsis box took over to scroll, so it never counts as a swipe.
+    const sideways = Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy);
+    if (e.type === 'pointerup' && sideways) decide(dx > 0);
   };
   card.addEventListener('pointerup', end);
   card.addEventListener('pointercancel', end);

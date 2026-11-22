@@ -1,39 +1,58 @@
-body {
+html, body {
+  height: 100%;
   margin: 0;
+  overflow: hidden; /* the page never scrolls; only the synopsis box does */
+}
+body {
   font-family: system-ui, sans-serif;
   background: #111;
   color: #eee;
 }
 main {
+  box-sizing: border-box;
+  height: 100dvh; /* dvh: the visible height on phones, excluding the browser bars */
   max-width: 420px;
   margin: 0 auto;
   padding: 16px;
+  display: flex;
+  flex-direction: column;
 }
+h1 { margin: 0 0 4px; font-size: 1.5rem; }
+#status { margin: 0 0 8px; }
 #card {
+  flex: 1;
+  min-height: 0; /* lets the card shrink so the synopsis box scrolls instead of the page */
+  display: flex;
+  flex-direction: column;
   background: #1e1e1e;
   border-radius: 12px;
   padding: 16px;
-  /* Vertical drags scroll the page; sideways drags are swipes. */
-  touch-action: pan-y;
+  touch-action: none; /* every drag on the card is a swipe... */
   user-select: none;
 }
+#card[hidden] { display: none; }
 #cover {
   display: block;
-  margin: 0 auto 12px;
-  max-height: 260px;
+  margin: 0 auto 8px;
+  max-height: 30vh;
   border-radius: 6px;
 }
-#author { color: #aaa; margin-top: -8px; }
+#title { margin: 0 0 4px; }
+#author { color: #aaa; margin: 0 0 8px; }
 #synopsis {
-  max-height: 40vh;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
   overflow-y: auto;
   line-height: 1.5;
   white-space: pre-line;
+  touch-action: pan-y; /* ...except up/down inside the synopsis, which scrolls it */
 }
 #choices {
   display: flex;
   gap: 12px;
 }
+#choices[hidden] { display: none; }
 button {
   flex: 1;
   margin-top: 12px;
