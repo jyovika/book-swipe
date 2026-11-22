@@ -29,6 +29,33 @@ function decide(yes) {
   }
 }
 
+const SWIPE_THRESHOLD = 100; // px of sideways drag that counts as a decision
+
+function enableSwipe(card) {
+  let startX = null;
+  card.addEventListener('pointerdown', (e) => {
+    startX = e.clientX;
+    card.style.transition = 'none';
+    card.setPointerCapture(e.pointerId);
+  });
+  card.addEventListener('pointermove', (e) => {
+    if (startX === null) return;
+    const dx = e.clientX - startX;
+    card.style.transform = `translateX(${dx}px) rotate(${dx / 20}deg)`;
+  });
+  const end = (e) => {
+    if (startX === null) return;
+    const dx = e.clientX - startX;
+    startX = null;
+    card.style.transition = 'transform 0.2s';
+    card.style.transform = '';
+    // pointercancel means the browser took over to scroll, so it never counts as a swipe.
+    if (e.type === 'pointerup' && Math.abs(dx) > SWIPE_THRESHOLD) decide(dx > 0);
+  };
+  card.addEventListener('pointerup', end);
+  card.addEventListener('pointercancel', end);
+}
+
 async function main() {
   try {
     const res = await fetch('books.json');
@@ -44,6 +71,7 @@ async function main() {
     show(books[0]);
     $('yes').onclick = () => decide(true);
     $('no').onclick = () => decide(false);
+    enableSwipe($('card'));
   } catch (err) {
     $('status').textContent = `Couldn't load books: ${err.message}`;
   }
