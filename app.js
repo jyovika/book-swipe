@@ -4,7 +4,11 @@ let i = 0;
 const liked = [];
 
 function show(book) {
+  // Hide until the new cover loads, so the previous book's cover never sits on this one.
+  $('cover').style.visibility = 'hidden';
   $('cover').src = book.cover;
+  // Covers are slow (Open Library redirects to archive.org), so fetch the next one now.
+  if (books[i + 1]) new Image().src = books[i + 1].cover;
   $('cover').alt = `Cover of ${book.title}`;
   $('title').textContent = book.title;
   $('author').textContent = book.author;
@@ -36,6 +40,7 @@ async function main() {
     }
     $('card').hidden = false;
     $('choices').hidden = false;
+    $('cover').onload = () => { $('cover').style.visibility = 'visible'; };
     show(books[0]);
     $('yes').onclick = () => decide(true);
     $('no').onclick = () => decide(false);
