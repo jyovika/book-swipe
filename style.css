@@ -127,7 +127,14 @@ button {
   cursor: pointer;
   transition: scale 0.15s ease-out;
 }
-#choices button { margin-top: 0; }
+#choices button {
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.icon { width: 20px; height: 20px; flex: none; }
 button:active { scale: 0.96; } /* a small press-in, so taps feel physical */
 button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; transition: none; }
 /* Peach for yes and the main actions; "Nope" is a quiet outline. */

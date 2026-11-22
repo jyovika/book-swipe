@@ -34,8 +34,14 @@
       <p id="synopsis"></p>
     </article>
     <div id="choices" hidden>
-      <button id="no" aria-label="Not interested">✕ Nope</button>
-      <button id="yes" aria-label="Want to read">♥ Yes</button>
+      <button id="no" aria-label="Not interested">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Nope
+      </button>
+      <button id="yes" aria-label="Want to read">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.7 7.9 3.8 4.5 7.3 4.5c2 0 3.6 1.1 4.7 2.8 1.1-1.7 2.7-2.8 4.7-2.8 3.5 0 5.6 3.4 4.5 6.6-1.7 4.8-9.2 9.4-9.2 9.4z" fill="currentColor"/></svg>
+        Yes
+      </button>
     </div>
     <ul id="matches" hidden></ul>
     <button id="round2" hidden>Start round 2</button>
