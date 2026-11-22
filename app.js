@@ -119,18 +119,86 @@ async function waitForMatches() {
 }
 
 function showMatches(matches, partner) {
+  if (round === 2) {
+    // Nothing survived round 2? Fall back to choosing among round 1's matches (this round's books).
+    showFinal(matches.length ? matches : books);
+    return;
+  }
+  if (matches.length === 1) {
+    showWinner(matches[0], null); // one shared book: no need for round 2 or a pick
+    return;
+  }
   $('status').textContent = matches.length
-    ? `Round ${round}: you and ${partner} both liked ${matches.length} of ${books.length} books:`
-    : `Round ${round}: you and ${partner} didn't like any of the same books.`;
-  $('matches').replaceChildren(...matches.map((b) => {
+    ? `Round 1: you and ${partner} both liked ${matches.length} of ${books.length} books:`
+    : `Round 1: you and ${partner} didn't like any of the same books.`;
+  listBooks(matches, false);
+  $('round2').hidden = matches.length < 2;
+  $('round2').onclick = () => startRound2(matches);
+}
+
+// Fills the list; with pickable=true each book gets a button to choose it as the final read.
+function listBooks(list, pickable) {
+  $('matches').replaceChildren(...list.map((b) => {
     const li = document.createElement('li');
-    li.textContent = `${b.title} — ${b.author}`;
+    li.textContent = `${b.title} — ${b.author} `;
+    if (pickable) {
+      const btn = document.createElement('button');
+      btn.className = 'pick';
+      btn.textContent = "Let's read this";
+      btn.onclick = () => pick(b);
+      li.append(btn);
+    }
     return li;
   }));
   $('matches').hidden = false;
-  // A second round only helps narrow down two or more books.
-  $('round2').hidden = !(round === 1 && matches.length >= 2);
-  $('round2').onclick = () => startRound2(matches);
+}
+
+function showFinal(candidates) {
+  if (candidates.length === 1) {
+    showWinner(candidates[0], null);
+    return;
+  }
+  $('status').textContent = 'Final round: pick your next read together.';
+  listBooks(candidates, true);
+  waitForPick();
+}
+
+async function pick(book) {
+  try {
+    await insert('picks', { session_code: session, book_id: book.id, player }, false);
+  } catch (err) {
+    // 409: your partner picked first; their choice wins and waitForPick will show it.
+    if (!err.message.startsWith('409')) $('status').textContent = `Couldn't save your pick: ${err.message}`;
+  }
+}
+
+// Polls until either player has picked, so both phones land on the same book.
+async function waitForPick() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/picks?session_code=eq.${session}&select=book_id,player`, {
+      headers: { apikey: SUPABASE_KEY },
+    });
+    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    const [chosen] = await res.json();
+    if (chosen) {
+      showWinner(allBooks.find((b) => b.id === chosen.book_id), chosen.player);
+      return;
+    }
+  } catch (err) {
+    $('status').textContent = `Connection problem, retrying… (${err.message})`;
+  }
+  setTimeout(waitForPick, POLL_MS);
+}
+
+function showWinner(book, pickedBy) {
+  $('status').textContent = pickedBy ? `Your next read (picked by ${pickedBy}):` : 'Your next read:';
+  $('matches').hidden = true;
+  $('round2').hidden = true;
+  $('winner-cover').src = book.cover;
+  $('winner-cover').alt = `Cover of ${book.title}`;
+  $('winner-title').textContent = book.title;
+  $('winner-author').textContent = book.author;
+  $('winner').hidden = false;
 }
 
 function startRound2(matches) {

@@ -79,5 +79,16 @@ button {
 #matches { overflow-y: auto; line-height: 1.8; padding-left: 20px; }
 #round2 { flex: none; background: #1f3a26; color: #8f8; }
 #round2[hidden] { display: none; }
+.pick {
+  flex: none;
+  margin: 4px 0 8px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  background: #1f3a26;
+  color: #8f8;
+}
+#winner { text-align: center; }
+#winner-cover { max-height: 45vh; border-radius: 6px; }
+#winner-author { color: #aaa; }
 #no { background: #3a2222; color: #f88; }
 #yes { background: #1f3a26; color: #8f8; }

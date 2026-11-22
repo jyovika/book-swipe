@@ -20,15 +20,26 @@ create table swipes (
   primary key (session_code, round, player, book_id)
 );
 
+-- The book a session finally chose. One per session: whoever taps first wins.
+create table picks (
+  session_code text primary key references sessions (code),
+  book_id text not null check (char_length(book_id) <= 40),
+  player text not null check (char_length(player) between 1 and 30),
+  created_at timestamptz not null default now()
+);
+
 -- The app uses the public anon key (it's visible in the page source), so Row Level Security
 -- decides what that key may do: read and add rows, never change or delete them.
 -- Newer Supabase projects don't grant table access to the anon role automatically.
-grant select, insert on sessions, swipes to anon;
+grant select, insert on sessions, swipes, picks to anon;
 
 alter table sessions enable row level security;
 alter table swipes enable row level security;
+alter table picks enable row level security;
 
 create policy "anyone can read sessions" on sessions for select to anon using (true);
 create policy "anyone can create a session" on sessions for insert to anon with check (true);
 create policy "anyone can read swipes" on swipes for select to anon using (true);
 create policy "anyone can add a swipe" on swipes for insert to anon with check (true);
+create policy "anyone can read picks" on picks for select to anon using (true);
+create policy "anyone can add a pick" on picks for insert to anon with check (true);
