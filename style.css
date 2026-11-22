@@ -1,5 +1,6 @@
 /* Hallmark · redesign: restyle · direction: custom, from the user's references (ink ground, cream paper cards, rounded shapes, one warm accent) · shape: app screen · signature: the book card as a sheet of cream paper */
 /* critique: the swipe card must read as paper you could pick up; everything else stays quiet so the cover leads. */
+/* Hallmark · waive 80 · the paper-cut waves are the user's own reference material, kept as background decoration */
 
 /* The look lives here: change these to restyle the whole app. */
 :root {
@@ -16,6 +17,10 @@
   --ring: rgba(245, 237, 221, 0.22);
   --focus: #f0a872;
   --font: 'Lexend', system-ui, sans-serif;
+  --wave-1: #3e7480;        /* bright teal, also from the reference */
+  --wave-2: #d9cbb0;        /* a strip of sand paper */
+  --wave-3: #26404a;
+  --wave-4: #1c333b;
   --radius-card: 24px;
   --radius-field: 14px;
 }
@@ -32,7 +37,22 @@ body {
   -webkit-font-smoothing: antialiased; /* crisper, lighter text on Apple screens */
 }
 h1, h2 { text-wrap: balance; overflow-wrap: break-word; min-width: 0; } /* even line lengths for long titles */
+/* Paper-cut waves: each layer casts a small shadow upward, like stacked cut paper. */
+.waves {
+  position: fixed;
+  inset: auto 0 0 0;
+  width: 100%;
+  height: 38vh;
+  pointer-events: none;
+}
+.waves path { filter: drop-shadow(0 -3px 4px rgba(0, 0, 0, 0.25)); }
+.wave-1 { fill: var(--wave-1); }
+.wave-2 { fill: var(--wave-2); }
+.wave-3 { fill: var(--wave-3); }
+.wave-4 { fill: var(--wave-4); }
+
 main {
+  position: relative; /* sits above the waves */
   box-sizing: border-box;
   height: 100dvh; /* dvh: the visible height on phones, excluding the browser bars */
   max-width: 420px;
@@ -112,7 +132,7 @@ button:active { scale: 0.96; } /* a small press-in, so taps feel physical */
 button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; transition: none; }
 /* Peach for yes and the main actions; "Nope" is a quiet outline. */
 #yes, #start, #join-btn, #round2, .pick { background: var(--accent); color: var(--on-accent); }
-#no { background: transparent; color: var(--on-ink); box-shadow: inset 0 0 0 2px var(--ring); }
+#no { background: var(--ink); color: var(--on-ink); box-shadow: inset 0 0 0 2px var(--ring); } /* solid, so the waves don't show through */
 
 #join[hidden] { display: none; }
 #join label { display: block; margin-top: 16px; color: var(--on-ink-muted); font-size: 0.9rem; }
