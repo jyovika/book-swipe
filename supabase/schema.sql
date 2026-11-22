@@ -3,6 +3,9 @@
 -- One row per swiping session; the code is what the second phone types in to join.
 create table sessions (
   code text primary key check (code ~ '^[A-Z0-9]{4,8}$'),
+  -- How many books (from the top of books.json) this session swipes; set by whoever starts it,
+  -- so both phones always swipe the same books.
+  book_count smallint not null default 60 check (book_count between 1 and 500),
   created_at timestamptz not null default now()
 );
 

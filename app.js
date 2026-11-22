@@ -23,19 +23,20 @@ async function insert(table, row, ignoreDuplicates = true) {
   return res;
 }
 
-async function sessionExists(code) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/sessions?code=eq.${encodeURIComponent(code)}&select=code`, {
+// Returns the session row ({ code, book_count }) or null if there's no such code.
+async function getSession(code) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/sessions?code=eq.${encodeURIComponent(code)}&select=code,book_count`, {
     headers: { apikey: SUPABASE_KEY },
   });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  return (await res.json()).length > 0;
+  return (await res.json())[0] ?? null;
 }
 
 async function createSession() {
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
     try {
-      await insert('sessions', { code }, false);
+      await insert('sessions', { code, book_count: books.length }, false);
       return code;
     } catch (err) {
       if (!err.message.startsWith('409')) throw err; // 409: code already taken, try another
@@ -46,7 +47,8 @@ async function createSession() {
 
 let session = null;
 let player = null;
-let books = [];
+let allBooks = []; // everything in books.json
+let books = []; // the books this session swipes
 let i = 0;
 
 function show(book) {
@@ -195,7 +197,9 @@ function setupJoin() {
     const code = $('code').value.trim().toUpperCase();
     if (!n) return;
     if (!code) { $('status').textContent = 'Enter the session code from your partner.'; return; }
-    if (!(await sessionExists(code))) { $('status').textContent = `No session with code ${code}. Check it and try again.`; return; }
+    const found = await getSession(code);
+    if (!found) { $('status').textContent = `No session with code ${code}. Check it and try again.`; return; }
+    books = allBooks.slice(0, found.book_count); // same books as whoever started the session
     startSwiping(code, n);
   });
 }
@@ -204,10 +208,11 @@ async function main() {
   try {
     const res = await fetch('books.json');
     if (!res.ok) throw new Error(`books.json returned ${res.status}`);
-    books = await res.json();
-    // Testing aid: ?n=5 swipes only the first 5 books. Both phones must use the same n.
+    allBooks = await res.json();
+    // Testing aid: ?n=5 swipes only the first 5 books. Only the starter's n matters;
+    // whoever joins gets the session's saved book_count.
     const n = Number(new URLSearchParams(location.search).get('n'));
-    if (n > 0) books = books.slice(0, n);
+    books = n > 0 ? allBooks.slice(0, n) : allBooks;
     if (books.length === 0) {
       $('status').textContent = 'No books in books.json.';
       return;
