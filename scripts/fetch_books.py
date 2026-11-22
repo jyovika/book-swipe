@@ -1,6 +1,6 @@
-"""Build books.json from Open Library. Run from the repo root: python3 scripts/fetch_books.py
+"""Build books.json and covers/ from Open Library. Run from the repo root: python3 scripts/fetch_books.py
 
-Fetched once and committed, so the app never calls an API at runtime
+Fetched once and committed, so the app never calls Open Library at runtime
 (Open Library blocks IPs that send bursts of requests).
 """
 import json
@@ -8,6 +8,7 @@ import re
 import time
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 # Open Library's "thriller" tag also covers horror, sci-fi and romance, so search
 # mystery/suspense subjects and exclude the genres that leak in.
@@ -22,21 +23,26 @@ MAX_BOOKS = 60
 MAX_PER_AUTHOR = 3  # otherwise half the list is Agatha Christie
 DELAY_S = 1.0  # Open Library's documented limit is about 1 request/second.
 HEADERS = {"User-Agent": "book-swipe-script/1.0"}
+COVERS_DIR = Path("covers")
 ENGLISH_WORDS = {"the", "a", "an", "of", "and", "to", "in", "is", "for", "on", "at",
                  "with", "my", "who", "there", "they", "were", "what", "from", "by"}
 
 
-def get_json(url, attempts=3):
+def get(url, attempts=3):
     req = urllib.request.Request(url, headers=HEADERS)
     for attempt in range(1, attempts + 1):
         time.sleep(DELAY_S * attempt)  # back off a little more on each retry
         try:
             with urllib.request.urlopen(req, timeout=90) as res:  # Open Library can be slow
-                return json.load(res)
+                return res.read()
         except OSError as err:  # dropped connections and timeouts (URLError is an OSError)
             if attempt == attempts:
                 raise
             print(f"  retrying after: {err}")
+
+
+def get_json(url):
+    return json.loads(get(url))
 
 
 def words(title):
@@ -79,6 +85,7 @@ def main():
         "fields": "key,title,author_name,cover_i,editions,editions.title",
     })
     docs = get_json(f"https://openlibrary.org/search.json?{params}")["docs"]
+    COVERS_DIR.mkdir(exist_ok=True)
 
     books, seen_titles, per_author = [], set(), {}
     for doc in docs:
@@ -101,13 +108,23 @@ def main():
         desc = clean_synopsis((desc.get("value") if isinstance(desc, dict) else desc) or "")
         if len(desc) < 80:  # too short to help you decide
             continue
+        book_id = doc["key"].removeprefix("/works/")
+        # Covers are stored in the repo: Open Library's cover links redirect to archive.org
+        # and take seconds to load, while GitHub Pages serves local files instantly.
+        cover = COVERS_DIR / f"{book_id}.jpg"
+        if not cover.exists():  # reruns skip covers already downloaded
+            try:
+                cover.write_bytes(get(f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-L.jpg"))
+            except Exception as err:
+                print(f"skip {title}: cover failed: {err}")
+                continue
         seen_titles.add(title.lower())
         per_author[author] = per_author.get(author, 0) + 1
         books.append({
-            "id": doc["key"].removeprefix("/works/"),
+            "id": book_id,
             "title": title,
             "author": author,
-            "cover": f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-L.jpg",
+            "cover": cover.as_posix(),
             "synopsis": desc,
         })
         print(f"{len(books):3} {title} ({author})")
@@ -116,7 +133,12 @@ def main():
     assert len({b["id"] for b in books}) == len(books), "duplicate ids"
     with open("books.json", "w") as f:
         json.dump(books, f, indent=1, ensure_ascii=False)
-    print(f"wrote {len(books)} books to books.json")
+    # Remove covers of books that dropped out of the list on this run.
+    keep = {b["cover"] for b in books}
+    for old in COVERS_DIR.glob("*.jpg"):
+        if old.as_posix() not in keep:
+            old.unlink()
+    print(f"wrote {len(books)} books to books.json, covers in {COVERS_DIR}/")
 
 
 if __name__ == "__main__":
