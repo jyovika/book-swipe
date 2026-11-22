@@ -1,7 +1,7 @@
 // The publishable key is meant to be public; Row Level Security limits it to reading and adding rows.
 const SUPABASE_URL = 'https://mwwxdtgocjsueejrvayd.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_QwfTOefMWM9lDf1uD4Ozig_jn9iRSxa';
-const ROUND = 1;
+let round = 1; // round 2 re-swipes only the books both players liked in round 1
 // No 0/O or 1/I, so a code read aloud or off a screen can't be mistyped.
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -62,12 +62,12 @@ function show(book) {
   $('author').textContent = book.author;
   $('synopsis').textContent = book.synopsis;
   $('synopsis').scrollTop = 0;
-  $('status').textContent = `Session ${session} · ${player} · Book ${i + 1} of ${books.length}`;
+  $('status').textContent = `Round ${round} · ${session} · ${player} · Book ${i + 1} of ${books.length}`;
 }
 
 function decide(yes) {
   const title = books[i].title;
-  insert('swipes', { session_code: session, round: ROUND, player, book_id: books[i].id, liked: yes })
+  insert('swipes', { session_code: session, round, player, book_id: books[i].id, liked: yes })
     .catch((err) => { $('status').textContent = `Couldn't save your swipe on "${title}": ${err.message}`; });
   i += 1;
   if (i < books.length) {
@@ -86,7 +86,7 @@ const POLL_MS = 3000;
 async function waitForMatches() {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/swipes?session_code=eq.${session}&round=eq.${ROUND}&select=player,book_id,liked`,
+      `${SUPABASE_URL}/rest/v1/swipes?session_code=eq.${session}&round=eq.${round}&select=player,book_id,liked`,
       { headers: { apikey: SUPABASE_KEY } },
     );
     if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
@@ -103,7 +103,8 @@ async function waitForMatches() {
     if (mine.size < books.length) {
       $('status').textContent = 'Saving your last swipes…';
     } else if (!partner) {
-      $('status').textContent = `You're done! Waiting for your partner to join session ${session}…`;
+      // Nobody else has swiped this round yet; we can't tell "not joined" from "not started".
+      $('status').textContent = `You're done! Waiting for your partner (session ${session})…`;
     } else if (theirs.size < books.length) {
       $('status').textContent = `You're done! Waiting for ${partner} to finish (${theirs.size} of ${books.length})…`;
     } else {
@@ -119,14 +120,28 @@ async function waitForMatches() {
 
 function showMatches(matches, partner) {
   $('status').textContent = matches.length
-    ? `You and ${partner} both liked ${matches.length} of ${books.length} books:`
-    : `You and ${partner} didn't like any of the same books.`;
+    ? `Round ${round}: you and ${partner} both liked ${matches.length} of ${books.length} books:`
+    : `Round ${round}: you and ${partner} didn't like any of the same books.`;
   $('matches').replaceChildren(...matches.map((b) => {
     const li = document.createElement('li');
     li.textContent = `${b.title} — ${b.author}`;
     return li;
   }));
   $('matches').hidden = false;
+  // A second round only helps narrow down two or more books.
+  $('round2').hidden = !(round === 1 && matches.length >= 2);
+  $('round2').onclick = () => startRound2(matches);
+}
+
+function startRound2(matches) {
+  round = 2;
+  books = matches; // both phones derive the same list, in books.json order
+  i = 0;
+  $('round2').hidden = true;
+  $('matches').hidden = true;
+  $('card').hidden = false;
+  $('choices').hidden = false;
+  show(books[0]);
 }
 
 const SWIPE_THRESHOLD = 40; // px of sideways drag that counts as a decision
