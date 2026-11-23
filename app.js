@@ -152,7 +152,20 @@ function showMatches(matches, partner) {
 function listBooks(list, pickable) {
   $('matches').replaceChildren(...list.map((b) => {
     const li = document.createElement('li');
-    li.textContent = `${b.title} — ${b.author} `;
+    li.className = 'book-row';
+    const thumb = document.createElement('img');
+    thumb.className = 'thumb';
+    thumb.src = b.cover;
+    thumb.alt = '';
+    const text = document.createElement('div');
+    const title = document.createElement('p');
+    title.className = 'row-title';
+    title.textContent = b.title;
+    const author = document.createElement('p');
+    author.className = 'row-author';
+    author.textContent = b.author;
+    text.append(title, author);
+    li.append(thumb, text);
     if (pickable) {
       const btn = document.createElement('button');
       btn.className = 'pick';
