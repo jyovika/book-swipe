@@ -50,13 +50,14 @@ let player = null;
 let allBooks = []; // everything in books.json
 let books = []; // the books this session swipes
 let i = 0;
+const PRELOAD_AHEAD = 5; // covers downloaded ahead of the one on screen
+const preloaded = new Map(); // cover url -> Image
 
 function show(book) {
   // Hide until the new cover loads, so the previous book's cover never sits on this one.
   $('cover').style.visibility = 'hidden';
   $('cover').src = book.cover;
-  // Fetch the next cover now so it's ready before the next swipe.
-  if (books[i + 1]) new Image().src = books[i + 1].cover;
+  preloadCovers(i + 1);
   $('cover').alt = `Cover of ${book.title}`;
   $('title').textContent = book.title;
   $('author').textContent = book.author;
@@ -67,6 +68,16 @@ function show(book) {
     chip(`Round ${round}`), chip(`Code ${session}`), chip(player), chip(`Book ${i + 1} of ${books.length}`),
   );
   $('meta').hidden = false;
+}
+
+// Fetches the next few covers early, so fast swiping on a slow connection doesn't outrun them.
+function preloadCovers(from) {
+  for (const next of books.slice(from, from + PRELOAD_AHEAD)) {
+    if (preloaded.has(next.cover)) continue;
+    const img = new Image();
+    img.src = next.cover;
+    preloaded.set(next.cover, img); // kept, so the browser can't drop the download
+  }
 }
 
 function chip(text) {
@@ -350,6 +361,7 @@ async function main() {
     $('yes').onclick = () => flyOff(true);
     $('no').onclick = () => flyOff(false);
     enableSwipe($('card'));
+    preloadCovers(0); // while the join screen is up; a joiner's books are a prefix of these
     setupJoin();
   } catch (err) {
     $('status').textContent = `Couldn't start: ${err.message}`;
