@@ -238,11 +238,32 @@ function startRound2(matches) {
 }
 
 const SWIPE_THRESHOLD = 40; // px of sideways drag that counts as a decision
+const FLY_MS = 250;
+let flying = false; // true while a card is leaving, so a double tap can't skip a book
+
+// Throws the card off the side it was swiped (or tapped) towards, then shows the next book.
+function flyOff(yes) {
+  if (flying) return;
+  const card = $('card');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { decide(yes); return; }
+  flying = true;
+  card.style.transition = `transform ${FLY_MS}ms ease-in, opacity ${FLY_MS}ms ease-in`;
+  card.style.transform = `translateX(${yes ? 120 : -120}vw) rotate(${yes ? 20 : -20}deg)`;
+  card.style.opacity = '0';
+  setTimeout(() => {
+    card.style.transition = 'none';
+    card.style.transform = '';
+    card.style.opacity = '';
+    flying = false;
+    decide(yes);
+  }, FLY_MS);
+}
 
 function enableSwipe(card) {
   let startX = null;
   let startY = 0;
   card.addEventListener('pointerdown', (e) => {
+    if (flying) return;
     startX = e.clientX;
     startY = e.clientY;
     card.style.transition = 'none';
@@ -258,11 +279,11 @@ function enableSwipe(card) {
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
     startX = null;
-    card.style.transition = 'transform 0.2s';
-    card.style.transform = '';
     // pointercancel means the synopsis box took over to scroll, so it never counts as a swipe.
     const sideways = Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy);
-    if (e.type === 'pointerup' && sideways) decide(dx > 0);
+    if (e.type === 'pointerup' && sideways) { flyOff(dx > 0); return; }
+    card.style.transition = 'transform 0.2s'; // not a swipe: spring back
+    card.style.transform = '';
   };
   card.addEventListener('pointerup', end);
   card.addEventListener('pointercancel', end);
@@ -326,8 +347,8 @@ async function main() {
       return;
     }
     $('cover').onload = () => { $('cover').style.visibility = 'visible'; };
-    $('yes').onclick = () => decide(true);
-    $('no').onclick = () => decide(false);
+    $('yes').onclick = () => flyOff(true);
+    $('no').onclick = () => flyOff(false);
     enableSwipe($('card'));
     setupJoin();
   } catch (err) {
